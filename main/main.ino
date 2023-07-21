@@ -8,9 +8,12 @@ Servo servo_mg996r;
 #define HIGH_ACCURACY
 
 #define LID_CLOSED 0
-#define LID_OPEN 140
+#define LID_OPEN 120
 
 #define LID_CLOSING_DELAY 1000 // 1s
+
+#define SERVO_PIN 9
+#define SERVO_SPEED 7  // ms per degree
 
 unsigned long timeObjectDetected;
 int lastPos = LID_CLOSED;
@@ -19,7 +22,7 @@ void setup() {
   Serial.begin(9600);
   Wire.begin();
 
-  servo_mg996r.attach(9);
+  servo_mg996r.attach(SERVO_PIN);
   servo_mg996r.write(LID_CLOSED);
 
   if (!servo_mg996r.attached()) {
@@ -36,6 +39,20 @@ void setup() {
   sensor_vl53l0x.startContinuous(1000); // Start continuous back-to-back mode
 }
 
+void moveServo(int pos) {
+  if (pos == LID_OPEN) {
+    for (int step = lastPos; step <= pos; step += 1) {
+      servo_mg996r.write(step);
+      delay(SERVO_SPEED);
+    }
+  } else {
+    for (int step = lastPos; step >= pos; step -= 1) {
+      servo_mg996r.write(step);
+      delay(SERVO_SPEED);
+    }
+  }
+}
+
 void loop() {
   int distance = sensor_vl53l0x.readRangeContinuousMillimeters();
   int pos = lastPos;
@@ -48,7 +65,7 @@ void loop() {
   }
 
   if (pos != lastPos) { // only write to the servo if the position has changed
-    servo_mg996r.write(pos);
+    moveServo(pos);
     lastPos = pos;
   }
 }
